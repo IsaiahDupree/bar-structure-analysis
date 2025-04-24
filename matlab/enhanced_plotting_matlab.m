@@ -8,24 +8,28 @@ function enhanced_plotting_matlab(A1, A2, A3, E1, E2, L, F1, F2, F3, num_element
 %
 % Inputs:
 %   A1, A2, A3 - Cross-sectional areas in mm²
-%   E1, E2 - Elastic moduli in N/mm²
+%   E1, E2 - Elastic moduli in GPa
 %   L - Length of each segment in mm
-%   F1, F2, F3 - Forces applied at segment ends in N
+%   F1, F2, F3 - Forces applied at segment ends in kN
 %   num_elements_per_segment - Number of elements per segment for FEM
 %   save_dir - Directory to save the plots (default: 'matlab')
 clc;
 
-%% Define parameters
-% Problem parameters
-A1 = 200;  % mm²
-A2 = 100;  % mm²
-A3 = 50;   % mm²
-E1 = 130;  % GPa
-E2 = 200;  % GPa
-L = 500;   % mm
-F1 = 20;   % kN
-F2 = 40;   % kN
-F3 = 20;   % kN
+%% Define default parameters if not provided
+% Check if all arguments were provided, otherwise use defaults
+if nargin < 1
+    % Problem parameters
+    A1 = 200;  % mm²
+    A2 = 100;  % mm²
+    A3 = 50;   % mm²
+    E1 = 130;  % GPa
+    E2 = 200;  % GPa
+    L = 500;   % mm
+    F1 = 20;   % kN
+    F2 = 40;   % kN
+    F3 = 20;   % kN
+    num_elements_per_segment = 8; % Default mesh density
+end
 
 % Convert units to consistent system (N and mm)
 E1 = E1 * 1000;  % Convert from GPa to N/mm²
@@ -47,8 +51,10 @@ end
 %% Calculate analytical solution
 [x_analytical, stress_analytical, displacement_analytical] = solve_analytical(A1, A2, A3, E1, E2, L, F1, F2, F3);
 
-%% Current mesh settings
-num_elements_per_segment = 8;  % Base calculation with medium-density mesh
+%% If num_elements_per_segment wasn't provided in function call
+if nargin < 10 || isempty(num_elements_per_segment)
+    num_elements_per_segment = 8;  % Base calculation with medium-density mesh
+end
 
 % Solve using FEM
 [x_fem, nodal_displacements, element_stresses, error] = solve_fem(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment);
