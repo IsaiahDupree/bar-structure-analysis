@@ -57,41 +57,98 @@ Contains utility functions for:
 - Plotting with proper formatting
 - Creating reports
 
-## Step-by-Step Finite Element Analysis
+## Engineering Approach to Finite Element Analysis
 
-The FEM implementation follows these steps:
+Our FEM implementation rigorously follows these eight fundamental engineering steps:
 
-1. **Partition the structure into elements**
-   - The bar is divided into a number of finite elements
-   - Element size = L / number_of_elements_per_segment
+### 1. Partitioning the Structure into Elements
 
-2. **Element Type**
-   - 2-node linear elements are used
-   - Each element has two nodes with one degree of freedom (displacement) per node
+- The bar is divided into discrete elements (initially 4 elements per segment, 12 total)
+- Element size determined systematically: L_element = L_segment / number_of_elements_per_segment
+- Nodes created at element boundaries with sequential global numbering
+- Node coordinates calculated based on their position along the bar length
 
-3. **Element Stiffness Matrix Calculation**
-   - For each element, a 2×2 stiffness matrix is calculated:
-   - k = (A·E/L) * [1 -1; -1 1]
-   - A = cross-sectional area
-   - E = elastic modulus
-   - L = element length
+### 2. Assigning Material and Geometric Properties
 
-4. **Global Matrix Assembly**
-   - Element stiffness matrices are assembled into a global stiffness matrix
-   - Global force vector is populated with applied forces
+- Material properties assigned based on segment position:
+  - Elements in segments 1 and 2: E₁ = 130 GPa
+  - Elements in segment 3: E₂ = 200 GPa
 
-5. **Boundary Conditions**
-   - Fixed displacement at the left end (x=0)
-   - Implementation: first row and column of the global matrix are removed
+- Geometric properties precisely defined for each element:
+  - Segment 1: Linearly varying cross-section from A₁ = 200 mm² to A₂ = 100 mm²
+  - Segment 2: Constant cross-section A₂ = 100 mm²
+  - Segment 3: Constant cross-section A₃ = 50 mm²
+  - Cross-sectional area evaluated at the element midpoint for elements in segment 1
 
-6. **Solution**
-   - The system of equations KU = F is solved for nodal displacements
-   - U = K⁻¹F, where K is the stiffness matrix and F is the force vector
+### 3. Assembling the Global Stiffness Matrix
 
-7. **Post-processing**
-   - Element stresses are calculated from nodal displacements
-   - Stress = E * (u₂ - u₁)/L
-   - Results are compared with the analytical solution
+- Element stiffness matrices derived from structural mechanics principles:
+  - k_element = (A·E/L) * [1 -1; -1 1]
+  - Derived from the weak form of the equilibrium equation: d/dx[EA·du/dx] = 0
+
+- Global assembly procedure follows standard FEM methodology:
+  - Initialize global stiffness matrix K of size n×n (n = number of nodes)
+  - For each element e with nodes i and j:
+
+    ```python
+    K[i,i] += k_element[0,0]
+    K[i,j] += k_element[0,1]
+    K[j,i] += k_element[1,0]
+    K[j,j] += k_element[1,1]
+    ```
+
+### 4. Applying Boundary Conditions and Forces
+
+- Essential (displacement) boundary conditions:
+  - Fixed left end: u₁ = 0
+  - Implemented by eliminating first row and column from global system
+
+- Natural (force) boundary conditions:
+  - Forces applied at segment interfaces: F₁ = 20 kN, F₂ = 40 kN, F₃ = 20 kN
+  - Force vector F constructed with forces placed at appropriate degrees of freedom
+  - Engineering sign convention: tensile forces positive, compressive forces negative
+
+### 5. Solving for Nodal Displacements
+
+- Modified system of equations after boundary conditions: K_reduced · U_reduced = F_reduced
+- Direct solution method employing efficient numerical techniques:
+
+  ```python
+  U_reduced = scipy.linalg.solve(K_reduced, F_reduced)
+  ```
+- Complete displacement vector reconstructed with fixed boundary values
+- Solution verified for physical reasonability (e.g., maximum displacement at free end)
+
+### 6. Calculating Element Stresses
+
+- Stress calculations based on fundamental mechanics relationships:
+  - Strain computation: ε = (u₂ - u₁)/L
+  - Stress derived from constitutive law: σ = E·ε
+  - Implemented as: σ_element = E_element · (u₂ - u₁)/L_element
+
+- Stress results verified against engineering expectations:
+  - Stress inversely proportional to cross-sectional area
+  - Stress constant within elements (first-order approximation)
+  - Maximum stress occurring in smallest cross-section element
+
+### 7. Comparing with Analytical Solution
+
+- Rigorous error assessment methodology:
+  - Analytical solution derived from exact integration of governing equation
+  - FEM stresses interpolated to comparison points (element centers)
+  - Relative percentage error calculated: ε = |(σ_fem - σ_analytical)/σ_analytical| × 100%
+  - Error metrics computed: maximum error, average error, error distribution
+
+### 8. Refining Mesh Based on Error
+
+- Adaptive refinement strategy implemented:
+  - Error threshold established at 5%
+  - If maximum error exceeds threshold, mesh is systematically refined
+  - Number of elements doubled in each refinement cycle
+  - Refinement continues until convergence criteria are satisfied:
+    1. Error falls below threshold, or
+    2. Maximum refinement iterations reached
+  - Convergence rates analyzed to validate implementation
 
 ## Analytical Solution
 
@@ -113,6 +170,7 @@ The Python implementation is modular, object-oriented, and uses NumPy, SciPy, an
    pip install -r requirements.txt
    ```
 
+
    The requirements include:
 
    - NumPy
@@ -122,9 +180,11 @@ The Python implementation is modular, object-oriented, and uses NumPy, SciPy, an
 
 #### Running the Basic Analysis
 
+
 ```bash
 python main.py
 ```
+
 
 This will:
 1. Calculate the analytical solution
@@ -135,9 +195,11 @@ This will:
 
 #### Running the Enhanced Analysis
 
+
 ```bash
 python enhanced_main.py
 ```
+
 
 The enhanced version provides:
 1. More detailed output in the terminal
@@ -147,9 +209,11 @@ The enhanced version provides:
 
 #### Generating a Comprehensive Report
 
+
 ```bash
 python create_comprehensive_document.py
 ```
+
 
 This will generate a detailed Word document (`Composite_Bar_Structure_Analysis_Report.docx`) containing:
 1. Problem formulation and parameters
@@ -172,13 +236,17 @@ The MATLAB implementation offers vector-based operations and visualization tools
 
 1. Open MATLAB and navigate to the bar_structure_analysis directory
 2. Run the main script:
+
    ```matlab
    main_axial_bar
    ```
+
    Or alternatively, use the more detailed implementation:
+
    ```matlab
    main_bar_analysis
    ```
+
 
 3. The scripts will:
    - Load input data from `inputData.m`
@@ -315,6 +383,7 @@ Having both Python and MATLAB implementations offers several benefits:
    array(1) % First element
    ```
 
+
 2. **Matrix Operations**:
 
    ```python
@@ -326,6 +395,7 @@ Having both Python and MATLAB implementations offers several benefits:
    % MATLAB
    A * B  % Matrix multiplication
    ```
+
 
 3. **Plotting**:
 
@@ -349,6 +419,7 @@ Having both Python and MATLAB implementations offers several benefits:
    saveas(gcf, 'plot.png')
    ```
 
+
 ## Troubleshooting
 
 ### Python Troubleshooting
@@ -362,9 +433,11 @@ Having both Python and MATLAB implementations offers several benefits:
 2. **Plot Directory Issues**:
    If plots aren't being saved, ensure the `plots` directory exists:
 
+
    ```bash
    mkdir plots
    ```
+
 
 3. **Memory Issues**:
    For large meshes, you might encounter memory problems. Reduce `num_elements_per_segment` in `main.py`.
@@ -374,9 +447,11 @@ Having both Python and MATLAB implementations offers several benefits:
 1. **Path Issues**:
    Make sure all .m files are in the MATLAB path:
 
+
    ```matlab
    addpath(genpath('.'));
    ```
+
 
 2. **Version Compatibility**:
    The code is designed to work with MATLAB R2016b and newer.
@@ -384,10 +459,12 @@ Having both Python and MATLAB implementations offers several benefits:
 3. **Figure Display Issues**:
    If figures aren't displaying properly:
 
+
    ```matlab
    close all;
    figure('Visible', 'on');
    ```
+
 
 ## File Descriptions
 

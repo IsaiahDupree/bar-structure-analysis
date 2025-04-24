@@ -314,30 +314,53 @@ class BarAnalysis:
                 error[i] = (element_stresses[i] - stress_analytical_at_centers[i]) / (abs(stress_analytical_at_centers[i]) + 1e-10)
             else:
                 # Use absolute error if stress is very small
+                error[i] = element_stresses[i] - stress_analytical_at_centers[i]
+                
+        # Create plots directory if it doesn't exist
         os.makedirs(plots_dir, exist_ok=True)
         print(f"Using alternative directory: {plots_dir}")
+        
+        # Element center coordinates for plotting
+        x_element_centers = (x_fem[:-1] + x_fem[1:]) / 2
+        # Calculate element lengths
+        element_lengths = x_fem[1:] - x_fem[:-1]
+        # Convert error to percentage
+        percent_error = np.abs(error) * 100
+        
+        return x_fem, nodal_displacements, element_stresses, error
+        
+    def plot_results(self, plots_dir="plots"):
+        """Generate plots for the results
+        
+        Args:
+            plots_dir: Directory to save plots
+        """
+        # Create plots directory if it doesn't exist
+        os.makedirs(plots_dir, exist_ok=True)
+        
+        # Run analytical solution
+        x_analytical, displacement_analytical, stress_analytical = self.solve_analytical()
+        
+        # Run FEM solution
+        x_fem, nodal_displacements, element_stresses, error = self.solve_fem()
+        
+        # Element center coordinates for plotting
+        x_element_centers = (x_fem[:-1] + x_fem[1:]) / 2
+        
+        # Figure 1: Displacement Field
+        plt.figure(figsize=(10, 6))
+        plt.plot(x_analytical, displacement_analytical, 'b-', label='Analytical')
+        plt.plot(x_fem, nodal_displacements, 'ro-', label='FEM')
+        plt.grid(True, linestyle='--', alpha=0.7)
+        plt.legend(loc='best', frameon=True, shadow=True)
 
-    # Element center coordinates for plotting
-    x_element_centers = (x_fem[:-1] + x_fem[1:]) / 2
-    # Calculate element lengths
-    element_lengths = x_fem[1:] - x_fem[:-1]
-    # Convert error to percentage
-    percent_error = np.abs(error) * 100
-
-    # Figure 1: Displacement Field
-    plt.figure(figsize=(10, 6))
-    plt.plot(x_analytical, displacement_analytical, 'b-', label='Analytical')
-    plt.plot(x_fem, nodal_displacements, 'ro-', label='FEM')
-    plt.grid(True, linestyle='--', alpha=0.7)
-    plt.legend(loc='best', frameon=True, shadow=True)
-
-    plot_with_labels(
-        plt,
-        "Axial Displacement Field in Composite Bar",
-        "Position along bar, x (mm)",
-        "Axial displacement, u(x) (mm)",
-        os.path.join(plots_dir, f"displacement_field_{self.num_elements_per_segment}.png")
-    )
+        plot_with_labels(
+            plt,
+            "Axial Displacement Field in Composite Bar",
+            "Position along bar, x (mm)",
+            "Axial displacement, u(x) (mm)",
+            os.path.join(plots_dir, f"displacement_field_{self.num_elements_per_segment}.png")
+        )
         
     # Figure 2: Stress Field
     plt.figure(figsize=(10, 6))

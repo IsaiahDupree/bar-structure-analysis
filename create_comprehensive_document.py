@@ -252,8 +252,200 @@ def create_comprehensive_document():
     
     doc.add_paragraph('For elements in the first segment (with varying cross-section), we used the cross-sectional area at the element midpoint. This is a reasonable approximation for linear variations when sufficient elements are used.', style='Custom Normal')
     
+    # Detailed FEM Methodology
+    doc.add_paragraph('4.3 Engineering Approach to FEM Implementation', style='Custom Heading 2')
+    doc.add_paragraph('Our implementation follows a rigorous engineering approach to solve the composite bar problem using finite element analysis. The following sections detail the eight key steps of our methodology:', style='Custom Normal')
+    
+    # Step 1: Partitioning the Structure into Elements
+    doc.add_paragraph('4.3.1 Partitioning the Structure into Elements', style='Custom Heading 2')
+    doc.add_paragraph('In this initial step, we systematically discretize the composite bar structure:', style='Custom Normal')
+    partitioning_steps = [
+        'Initially divide each segment into 4 equal elements (12 elements total)',
+        'Each element has two nodes with axial displacement as the degree of freedom',
+        'Element size is calculated as L_segment / number_of_elements_per_segment = 125 mm initially',
+        'Global node numbering scheme proceeds sequentially from fixed end (0) to free end (n)',
+        'Each node has a defined coordinate along the bar length for accurate geometric representation'
+    ]
+    for step in partitioning_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    
+    # Step 2: Assigning Material and Geometric Properties
+    doc.add_paragraph('4.3.2 Assigning Material and Geometric Properties', style='Custom Heading 2')
+    doc.add_paragraph('Each element is assigned specific material and geometric properties according to its position:', style='Custom Normal')
+    property_steps = [
+        'Material properties: Elements in segments 1 and 2 have E₁ = 130 GPa, elements in segment 3 have E₂ = 200 GPa',
+        'Cross-sectional areas: A₁ = 200 mm² (start of segment 1), A₂ = 100 mm² (segments 1-2 interface), A₃ = 50 mm² (segment 3)',
+        'For elements in the linearly varying section (segment 1), cross-sectional area is evaluated at the element midpoint',
+        'Each property is stored in element-specific data structures for efficient computation',
+        'Material property assignment accounts for physical discontinuities at segment interfaces'
+    ]
+    for step in property_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    
+    # Step 3: Assembling the Global Stiffness Matrix
+    doc.add_paragraph('4.3.3 Assembling the Global Stiffness Matrix', style='Custom Heading 2')
+    doc.add_paragraph('The global stiffness matrix is assembled systematically from individual element contributions:', style='Custom Normal')
+    assembly_steps = [
+        'For each element, we compute the 2×2 element stiffness matrix: k_element = (A·E/L) * [1 -1; -1 1]',
+        'Element stiffness matrices are transformed to global coordinates (straightforward for 1D problem)',
+        'Assembly follows standard FEM practice: for element with nodes i and j, add contributions to K[i,i], K[i,j], K[j,i], and K[j,j]',
+        'The resulting global stiffness matrix K has dimensions n×n, where n is the number of nodes',
+        'Matrix assembly procedure accounts for element connectivity information to ensure proper force transmission'
+    ]
+    code_snippet = """# Python code for stiffness matrix assembly
+K_global = np.zeros((n_nodes, n_nodes))  # Initialize global stiffness matrix
+for e in range(n_elements):  # Loop through each element
+    # Get element nodes and properties
+    node1, node2 = connectivity[e]
+    L = element_lengths[e]
+    A = element_areas[e]
+    E = element_moduli[e]
+    
+    # Calculate element stiffness matrix
+    k = (A*E/L) * np.array([[1, -1], [-1, 1]])
+    
+    # Assemble into global matrix
+    K_global[node1, node1] += k[0, 0]
+    K_global[node1, node2] += k[0, 1]
+    K_global[node2, node1] += k[1, 0]
+    K_global[node2, node2] += k[1, 1]"""
+    for step in assembly_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    doc.add_paragraph(code_snippet, style='Code Block')
+    
+    # Step 4: Applying Boundary Conditions and Forces
+    doc.add_paragraph('4.3.4 Applying Boundary Conditions and Forces', style='Custom Heading 2')
+    doc.add_paragraph('We systematically apply both displacement and force boundary conditions:', style='Custom Normal')
+    bc_steps = [
+        'Displacement boundary condition: Fixed left end (u₁ = 0) implemented by eliminating first row and column from global system',
+        'Force boundary conditions: Point loads at segment junctions (F₁ = 20 kN, F₂ = 40 kN, F₃ = 20 kN)',
+        'Forces are applied as external loads at specific node positions in the global force vector',
+        'Careful attention to force sign convention: tensile forces are positive',
+        'The full boundary value problem is defined by KU = F after displacement boundary conditions are applied'
+    ]
+    for step in bc_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    
+    # Step 5: Solving for Nodal Displacements
+    doc.add_paragraph('4.3.5 Solving for Nodal Displacements', style='Custom Heading 2')
+    doc.add_paragraph('The system of equations is solved efficiently to obtain nodal displacements:', style='Custom Normal')
+    solving_steps = [
+        'Modified system after boundary conditions: K_reduced · U_reduced = F_reduced',
+        'Direct solution method used: U_reduced = K_reduced⁻¹ · F_reduced',
+        'Implementation uses scipy.linalg.solve for numerical stability and efficiency',
+        'Nodal displacements are the primary unknowns in the FEM formulation',
+        'Solution is verified by checking that displacement at fixed end = 0 and maximum displacement occurs at free end'
+    ]
+    code_snippet = """# Python code for solving the FEM system
+# Apply displacement boundary condition (remove first row/column)
+K_reduced = K_global[1:, 1:]
+F_reduced = F_global[1:]
+
+# Solve the system for nodal displacements
+U_reduced = scipy.linalg.solve(K_reduced, F_reduced)
+
+# Reconstruct full displacement vector (with u₁ = 0)
+U = np.zeros(n_nodes)
+U[1:] = U_reduced"""
+    for step in solving_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    doc.add_paragraph(code_snippet, style='Code Block')
+    
+    # Step 6: Calculating Element Stresses
+    doc.add_paragraph('4.3.6 Calculating Element Stresses', style='Custom Heading 2')
+    doc.add_paragraph('Element stresses are computed from the nodal displacements using constitutive relationships:', style='Custom Normal')
+    stress_steps = [
+        'For each element: σ_element = E_element · (u₂ - u₁)/L_element',
+        'Strain is calculated as ε = (u₂ - u₁)/L, where u₂ and u₁ are displacements at element nodes',
+        "Stress follows Hooke's law: σ = E·ε, where E is the elastic modulus for the element",
+        'Stress is constant within each element (consistent with first-order elements)',
+        'Higher stresses are observed in elements with smaller cross-sectional areas, as expected from mechanics'
+    ]
+    for step in stress_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    
+    # Step 7: Comparing with Analytical Solution
+    doc.add_paragraph('4.3.7 Comparing with Analytical Solution', style='Custom Heading 2')
+    doc.add_paragraph('We conduct a rigorous comparison between FEM results and the analytical solution:', style='Custom Normal')
+    comparison_steps = [
+        'Analytical solution provides exact values at any position along the bar',
+        'For comparison, we evaluate analytical stresses and displacements at element centers',
+        'Relative percentage error is calculated: ε = |(σ_fem - σ_analytical)/σ_analytical| × 100%',
+        'Error metrics computed include maximum error, average error, and error distribution',
+        'Special attention is paid to error at material and geometric discontinuities'
+    ]
+    for step in comparison_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    
+    # Step 8: Refining Mesh Based on Error
+    doc.add_paragraph('4.3.8 Refining Mesh Based on Error', style='Custom Heading 2')
+    doc.add_paragraph('An adaptive mesh refinement strategy is implemented to achieve desired accuracy:', style='Custom Normal')
+    refinement_steps = [
+        'Error threshold established at 5% for this engineering application',
+        'If maximum error exceeds threshold, mesh is systematically refined',
+        'Refinement doubles the number of elements per segment',
+        'The entire FEM process (steps 1-7) is repeated with the refined mesh',
+        'Convergence is achieved when error falls below threshold or maximum iterations reached',
+        'Convergence study confirms that solution approaches the analytical result as mesh density increases'
+    ]
+    code_snippet = """# Python code for adaptive mesh refinement
+def solve_with_mesh_refinement(max_iterations=5, error_threshold=0.05):
+    num_elements = initial_num_elements
+    iteration = 0
+    max_error = float('inf')
+    
+    while max_error > error_threshold and iteration < max_iterations:
+        # Create mesh with current number of elements
+        mesh = create_mesh(num_elements)
+        
+        # Solve FEM problem
+        displacements, stresses = solve_fem(mesh)
+        
+        # Compare with analytical solution
+        analytical_stresses = calculate_analytical_stress(mesh)
+        error = calculate_error(stresses, analytical_stresses)
+        max_error = np.max(error)
+        
+        # Refine mesh if needed
+        if max_error > error_threshold:
+            num_elements *= 2  # Double the number of elements
+            iteration += 1
+            print("Refining mesh: {} elements".format(num_elements))
+        else:
+            print("Convergence achieved with {} elements".format(num_elements))
+            break"""
+    for step in refinement_steps:
+        p = doc.add_paragraph(style='Custom Normal')
+        p.add_run('• ').bold = True
+        p.add_run(step)
+    doc.add_paragraph(code_snippet, style='Code Block')
+    
+    # Update image references to use the enhanced versions
+    try:
+        doc.add_paragraph('Figure 5 shows the combined visualization of our comprehensive FEM analysis:', style='Custom Normal')
+        doc.add_picture('plots/enhanced_combined_visualization.png', width=Inches(6))
+        last_paragraph = doc.paragraphs[-1]
+        last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        doc.add_paragraph('Figure 5: Comprehensive view of the FEM analysis showing problem configuration, discretization, and results', style='Custom Normal').alignment = WD_ALIGN_PARAGRAPH.CENTER
+    except:
+        doc.add_paragraph('[Enhanced combined visualization would be displayed here]', style='Custom Normal').alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
     # FEM Results
-    doc.add_paragraph('4.3 FEM Results', style='Custom Heading 2')
+    doc.add_paragraph('4.4 FEM Results', style='Custom Heading 2')
     
     # Try to insert displacement field plot
     try:
@@ -340,11 +532,13 @@ def create_comprehensive_document():
         p.add_run('• ').bold = True
         p.add_run(point)
     
-    # Save the document
-    doc_path = 'Composite_Bar_Structure_Analysis_Report.docx'
+    # Save the document with a timestamped filename to avoid permission issues
+    import datetime
+    timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M%S')
+    doc_path = 'Composite_Bar_Structure_Analysis_Report_{}.docx'.format(timestamp)
     doc.save(doc_path)
     
-    print(f"Comprehensive Word document created: {doc_path}")
+    print("Comprehensive Word document created: {}".format(doc_path))
     return doc_path
 
 if __name__ == "__main__":
