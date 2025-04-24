@@ -38,14 +38,28 @@ F1 = F1 * 1000;  % Convert from kN to N
 F2 = F2 * 1000;  % Convert from kN to N
 F3 = F3 * 1000;  % Convert from kN to N
 
-%% Handle default save directory
-if nargin < 11
-    save_dir = 'matlab';
+%% Handle save directory
+if nargin < 11 || isempty(save_dir)
+    save_dir = fullfile(pwd, 'matlab_plots');
 end
+
+% Always use absolute paths to ensure consistent behavior
+if ~(ispc && length(save_dir) >= 2 && save_dir(2) == ':') && ... % Windows check
+   ~(~ispc && ~isempty(save_dir) && save_dir(1) == '/') % Unix check
+    save_dir = fullfile(pwd, save_dir);
+end
+
+fprintf('Using plots directory: %s\n', save_dir);
 
 % Create a directory for saving plots if it doesn't exist
 if ~exist(save_dir, 'dir')
-    mkdir(save_dir);
+    fprintf('Creating directory: %s\n', save_dir);
+    [success, msg] = mkdir(save_dir);
+    if ~success
+        warning('Failed to create directory: %s. Error: %s', save_dir, msg);
+        save_dir = pwd;
+        fprintf('Falling back to current directory: %s\n', save_dir);
+    end
 end
 
 %% Calculate analytical solution
@@ -121,7 +135,7 @@ for i = 1:length(element_stresses)
     if error_pct > 5  % Only annotate points with significant error
         text(x, stress_fem + 20, sprintf('%.1f%%', error_pct), ...
             'FontSize', 8, 'HorizontalAlignment', 'center', ...
-            'BackgroundColor', 'white', 'EdgeColor', 'gray', 'Margin', 2);
+            'BackgroundColor', [1, 1, 1], 'EdgeColor', [0.5, 0.5, 0.5], 'Margin', 2);
     end
 end
 
@@ -136,13 +150,13 @@ end
 % Add material property annotations
 annotation('textbox', [0.2, 0.85, 0.1, 0.05], 'String', ...
     sprintf('E₁ = %.0f GPa', E1/1000), 'FitBoxToText', 'on', ...
-    'BackgroundColor', 'lightblue', 'EdgeColor', 'gray', 'LineWidth', 1);
+    'BackgroundColor', [0.8, 0.8, 1.0], 'EdgeColor', [0.5, 0.5, 0.5], 'LineWidth', 1);
 annotation('textbox', [0.45, 0.85, 0.1, 0.05], 'String', ...
     sprintf('E₁ = %.0f GPa', E1/1000), 'FitBoxToText', 'on', ...
-    'BackgroundColor', 'lightblue', 'EdgeColor', 'gray', 'LineWidth', 1);
+    'BackgroundColor', [0.8, 0.8, 1.0], 'EdgeColor', [0.5, 0.5, 0.5], 'LineWidth', 1);
 annotation('textbox', [0.75, 0.85, 0.1, 0.05], 'String', ...
     sprintf('E₂ = %.0f GPa', E2/1000), 'FitBoxToText', 'on', ...
-    'BackgroundColor', 'lightblue', 'EdgeColor', 'gray', 'LineWidth', 1);
+    'BackgroundColor', [0.8, 0.8, 1.0], 'EdgeColor', [0.5, 0.5, 0.5], 'LineWidth', 1);
 
 % Add grid and styling
 grid on;
@@ -238,20 +252,20 @@ subplot(2, 1, 1);
 x1 = [0, L];
 y_top1 = [A1/20, A2/20];  % Scale down for visualization
 y_bottom1 = [-A1/20, -A2/20];
-fill([x1, fliplr(x1)], [y_top1, fliplr(y_bottom1)], [0.8, 0.8, 1.0], 'EdgeColor', 'blue', 'LineWidth', 1.5);
+fill([x1, fliplr(x1)], [y_top1, fliplr(y_bottom1)], [0.8, 0.8, 1.0], 'EdgeColor', [0, 0, 1], 'LineWidth', 1.5);
 
 % Second segment (constant area)
 x2 = [L, 2*L];
 y_top2 = [A2/20, A2/20];
 y_bottom2 = [-A2/20, -A2/20];
 hold on;
-fill([x2, fliplr(x2)], [y_top2, fliplr(y_bottom2)], [0.8, 1.0, 0.8], 'EdgeColor', 'green', 'LineWidth', 1.5);
+fill([x2, fliplr(x2)], [y_top2, fliplr(y_bottom2)], [0.8, 1.0, 0.8], 'EdgeColor', [0, 0.5, 0], 'LineWidth', 1.5);
 
 % Third segment (constant area)
 x3 = [2*L, 3*L];
 y_top3 = [A3/20, A3/20];
 y_bottom3 = [-A3/20, -A3/20];
-fill([x3, fliplr(x3)], [y_top3, fliplr(y_bottom3)], [1.0, 0.8, 0.8], 'EdgeColor', 'red', 'LineWidth', 1.5);
+fill([x3, fliplr(x3)], [y_top3, fliplr(y_bottom3)], [1.0, 0.8, 0.8], 'EdgeColor', [1, 0, 0], 'LineWidth', 1.5);
 
 % Add material labels
 text(L/2, A1/15, sprintf('Segment 1\nA₁ = %d mm²\nE₁ = %d GPa', A1, E1/1000), 'HorizontalAlignment', 'center');
@@ -299,7 +313,7 @@ mesh_description = sprintf('%d elements/segment (%d total)', num_elements_per_se
 error_description = sprintf('Max error: %.2f%%, Avg: %.2f%%', max(percent_error), mean(percent_error));
 annotation('textbox', [0.8, 0.25, 0.15, 0.05], 'String', ...
     {mesh_description, error_description}, ...
-    'FitBoxToText', 'on', 'BackgroundColor', 'white', 'EdgeColor', 'gray', ...
+    'FitBoxToText', 'on', 'BackgroundColor', [1, 1, 1], 'EdgeColor', [0.5, 0.5, 0.5], ...
     'LineWidth', 1, 'FontSize', 9);
 
 % Add segment boundaries
