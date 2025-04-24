@@ -193,12 +193,12 @@ def create_comprehensive_document():
     # Try to insert stress field plot
     try:
         doc.add_paragraph('The analytical stress distribution is shown in Figure 2:', style='Custom Normal')
-        # Look in multiple possible locations for the plot files
+        # Look in project-specific plots directory
         plot_paths = [
+            os.path.join(os.path.dirname(__file__), 'plots', 'stress_field_4.png'),
             'plots/stress_field_4.png',
             '../plots/stress_field_4.png',
-            'stress_field_4.png',
-            os.path.join(os.path.dirname(os.getcwd()), 'plots', 'stress_field_4.png')
+            'stress_field_4.png'
         ]
         
         plot_found = False

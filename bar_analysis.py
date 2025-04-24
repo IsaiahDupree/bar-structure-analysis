@@ -314,34 +314,49 @@ class BarAnalysis:
                 error[i] = (element_stresses[i] - stress_analytical_at_centers[i]) / (abs(stress_analytical_at_centers[i]) + 1e-10)
             else:
                 # Use absolute error if stress is very small
-                error[i] = element_stresses[i] - stress_analytical_at_centers[i]
-        
-        return x_nodal, nodal_displacements, element_stresses, error
-    
-    def plot_results(self, x_analytical, stress_analytical, displacement_analytical,
-                   x_fem, nodal_displacements, element_stresses, error):
-        """
-        Plot results comparing analytical and FEM solutions
-        """
-        # Create plots directory if it doesn't exist
-        plots_dir = 'plots'
         os.makedirs(plots_dir, exist_ok=True)
-        print(f"Saving plots to directory: {os.path.abspath(plots_dir)}")
-        # Make sure the directory is writable
-        if not os.access(plots_dir, os.W_OK):
-            print(f"Warning: The directory {plots_dir} is not writable")
-            # Try to create a different directory
-            plots_dir = os.path.join(os.getcwd(), 'output_plots')
-            os.makedirs(plots_dir, exist_ok=True)
-            print(f"Using alternative directory: {plots_dir}")
+        print(f"Using alternative directory: {plots_dir}")
+
+    # Element center coordinates for plotting
+    x_element_centers = (x_fem[:-1] + x_fem[1:]) / 2
+    # Calculate element lengths
+    element_lengths = x_fem[1:] - x_fem[:-1]
+    # Convert error to percentage
+    percent_error = np.abs(error) * 100
+
+    # Figure 1: Displacement Field
+    plt.figure(figsize=(10, 6))
+    plt.plot(x_analytical, displacement_analytical, 'b-', label='Analytical')
+    plt.plot(x_fem, nodal_displacements, 'ro-', label='FEM')
+    plt.grid(True, linestyle='--', alpha=0.7)
+    plt.legend(loc='best', frameon=True, shadow=True)
+
+    plot_with_labels(
+        plt,
+        "Axial Displacement Field in Composite Bar",
+        "Position along bar, x (mm)",
+        "Axial displacement, u(x) (mm)",
+        os.path.join(plots_dir, f"displacement_field_{self.num_elements_per_segment}.png")
+    )
         
-        # Element center coordinates for plotting
-        x_element_centers = (x_fem[:-1] + x_fem[1:]) / 2
+    # Figure 2: Stress Field
+    plt.figure(figsize=(10, 6))
+    plt.plot(x_analytical, stress_analytical, 'b-', label='Analytical')
+    plt.plot(x_element_centers, element_stresses, 'ro-', label='FEM')
+    
+    # Add segment boundaries markers
+    for i, x_pos in enumerate([self.L, 2*self.L]):
+        plt.axvline(x_pos, color='gray', linestyle='--', alpha=0.7)
+        plt.text(x_pos+5, max(stress_analytical)*0.2, f'Segment {i+1}/{i+2} boundary', 
+                rotation=90, verticalalignment='center')
+    
+    # Add segment annotations
         
         # Figure 1: Displacement Field
         plt.figure(figsize=(10, 6))
         plt.plot(x_analytical, displacement_analytical, 'b-', label='Analytical')
         plt.plot(x_fem, nodal_displacements, 'ro-', label='FEM')
+        plt.legend()
         plot_with_labels(
             plt, 
             "Displacement Field", 
@@ -354,6 +369,7 @@ class BarAnalysis:
         plt.figure(figsize=(10, 6))
         plt.plot(x_analytical, stress_analytical, 'b-', label='Analytical')
         plt.plot(x_element_centers, element_stresses, 'ro-', label='FEM')
+        plt.legend()
         plot_with_labels(
             plt, 
             "Stress Field", 
@@ -367,12 +383,32 @@ class BarAnalysis:
         plt.axhline(y=0.05, color='r', linestyle='--', label='5% Error Threshold')
         plt.axhline(y=-0.05, color='r', linestyle='--')
         plt.plot(x_element_centers, error, 'bo-')
+        plt.legend()
         plot_with_labels(
             plt, 
             "Relative Error in Stress", 
             "Position x (mm)", 
             "Relative Error",
             os.path.join(plots_dir, f"error_{self.num_elements_per_segment}.png")
+        )
+        
+        # Figure 4: Area Distribution
+        x_plot = np.linspace(0, self.total_length, 1000)
+        area = np.array([self.get_area_at_x(xi) for xi in x_plot])
+        
+        plt.figure(figsize=(10, 6))
+        plt.plot(x_plot, area)
+        
+        # Add segment boundaries
+        plt.axvline(x=self.L, color='r', linestyle='--')
+        plt.axvline(x=2*self.L, color='r', linestyle='--')
+        
+        plot_with_labels(
+            plt, 
+            "Cross-sectional Area Distribution", 
+            "Position x (mm)", 
+            "Area (mm²)",
+            os.path.join(plots_dir, "area_distribution.png")
         )
         
         # Figure 4: Area Distribution

@@ -1,0 +1,32 @@
+Bar Structure Analysis Report
+===========================
+
+Problem Parameters:
+- A1 = 200 mm², A2 = 100 mm², A3 = 50 mm²
+- E1 = 130.0 GPa, E2 = 200.0 GPa
+- L = 500 mm
+- F1 = 20.0 kN, F2 = 40.0 kN, F3 = 20.0 kN
+
+Finite Element Analysis:
+- Number of elements per segment: 4
+- Total number of elements: 12
+- Element type: 2-node linear elements
+
+Results:
+- Plots and visualizations have been saved in the 'plots' directory
+- See stress_field.png for stress distribution
+- See displacement_field.png for displacement distribution
+- See error.png for error analysis
+
+Methodology:
+1. Analytical solution calculated for exact stress distribution
+2. Finite element method applied with 2-node elements
+3. Element stiffness matrices calculated and assembled
+4. System solved for nodal displacements
+5. Element stresses computed from displacements
+6. Error analysis performed to validate results
+
+Analysis:
+- The mesh was refined until the error was below 5%
+- Stress concentration is observed at segment transitions
+- The maximum displacement occurs at the right end of the bar
