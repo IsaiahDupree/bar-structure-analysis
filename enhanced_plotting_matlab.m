@@ -1,9 +1,18 @@
-%% Enhanced Plot Generation for Bar Structure Analysis
-% This script creates improved visualizations with detailed annotations and legends
-% using the refined FEM methodology that demonstrates proper convergence behavior
-
-clear all;
-close all;
+function enhanced_plotting_matlab(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment, save_dir)
+% ENHANCED_PLOTTING_MATLAB - Creates improved visualizations with detailed annotations
+% This function creates enhanced plots for bar structure analysis with detailed annotations
+% and better styling using the refined FEM methodology, exactly matching the Python version
+%
+% Syntax:
+%   enhanced_plotting_matlab(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment, save_dir)
+%
+% Inputs:
+%   A1, A2, A3 - Cross-sectional areas in mm²
+%   E1, E2 - Elastic moduli in N/mm²
+%   L - Length of each segment in mm
+%   F1, F2, F3 - Forces applied at segment ends in N
+%   num_elements_per_segment - Number of elements per segment for FEM
+%   save_dir - Directory to save the plots (default: 'matlab')
 clc;
 
 %% Define parameters
@@ -25,9 +34,14 @@ F1 = F1 * 1000;  % Convert from kN to N
 F2 = F2 * 1000;  % Convert from kN to N
 F3 = F3 * 1000;  % Convert from kN to N
 
-%% Create plots directory if it doesn't exist
-if ~exist('plots', 'dir')
-    mkdir('plots');
+%% Handle default save directory
+if nargin < 11
+    save_dir = 'matlab';
+end
+
+% Create a directory for saving plots if it doesn't exist
+if ~exist(save_dir, 'dir')
+    mkdir(save_dir);
 end
 
 %% Calculate analytical solution
@@ -41,29 +55,17 @@ num_elements_per_segment = 8;  % Base calculation with medium-density mesh
 
 % Element center coordinates for plotting
 x_element_centers = (x_fem(1:end-1) + x_fem(2:end)) / 2;
-% Calculate element lengths
-element_lengths = x_fem(2:end) - x_fem(1:end-1);
-% Convert error to percentage
-percent_error = abs(error) * 100;
+percent_error = abs(error) * 100;  % Convert to percentage
 
-%% Generate additional FEM data for convergence study
-mesh_sizes = [2, 4, 8, 16];  % Elements per segment
-convergence_errors = zeros(size(mesh_sizes));
+% Calculate additional analytical values for correctness validation
+% Similar to the Python implementation's approach
+R = F1 + F2 + F3;  % Total reaction at fixed end
+N1 = R;            % Internal force in segment 1
+N2 = R - F1;       % Internal force in segment 2
+N3 = R - F1 - F2;  % Internal force in segment 3
 
-% Compute errors for different mesh densities
-for i = 1:length(mesh_sizes)
-    mesh_size = mesh_sizes(i);
-    
-    % Solve with current mesh size
-    [~, ~, temp_elem_stresses, temp_error] = solve_fem(A1, A2, A3, E1, E2, L, F1, F2, F3, mesh_size);
-    
-    % Calculate max error percentage
-    max_error_pct = max(abs(temp_error)) * 100;
-    convergence_errors(i) = max_error_pct;
-end
-
-%% DISPLACEMENT FIELD PLOT
-figure('Position', [100, 100, 900, 600]);
+% 1. ENHANCED DISPLACEMENT FIELD PLOT
+figure('Position', [100, 100, 900, 700]);
 plot(x_analytical, displacement_analytical, 'b-', 'LineWidth', 2.5, 'DisplayName', 'Analytical Solution');
 hold on;
 plot(x_fem, nodal_displacements, 'ro-', 'MarkerSize', 6, 'LineWidth', 1.5, 'DisplayName', 'FEM Solution (Nodes)');
@@ -71,11 +73,18 @@ plot(x_fem, nodal_displacements, 'ro-', 'MarkerSize', 6, 'LineWidth', 1.5, 'Disp
 % Add segment boundaries
 for i = 1:2
     x_pos = i * L;
-    line([x_pos, x_pos], ylim, 'Color', [0.5, 0.5, 0.5], 'LineStyle', '--', 'LineWidth', 1);
+    xline(x_pos, '--', 'Color', [0.5 0.5 0.5], 'Alpha', 0.6);
+    text(x_pos+15, max(displacement_analytical)*0.15, sprintf('Segment %d/%d boundary', i, i+1), ...
+         'Rotation', 90, 'VerticalAlignment', 'middle');
 end
 
-% Add grid and styling
-grid on;
+% Add segment annotations
+mid_segment_positions = [L/2, L*1.5, L*2.5];
+segment_properties = {...
+    sprintf('A₁=%d-%d mm², E₁=%.0f GPa', A1, A2, E1/1000), ...
+    sprintf('A₂=%d mm², E₁=%.0f GPa', A2, E1/1000), ...
+    sprintf('A₃=%d mm², E₂=%.0f GPa', A3, E2/1000) ...
+};
 xlabel('Position (mm)', 'FontSize', 12);
 ylabel('Displacement (mm)', 'FontSize', 12);
 title('Displacement Field: Analytical vs. FEM Solutions', 'FontSize', 14);
@@ -88,7 +97,7 @@ annotation('textbox', [0.5, 0.02, 0, 0], 'String', ...
     'EdgeColor', [0.8, 0.8, 0.8], 'LineWidth', 1, 'FontSize', 10);
 
 % Save the enhanced displacement field plot
-saveas(gcf, 'plots/enhanced_displacement_field.png');
+saveas(gcf, fullfile(save_dir, 'enhanced_displacement_field.png'));
 
 %% STRESS FIELD PLOT
 figure('Position', [100, 100, 900, 600]);
@@ -143,7 +152,7 @@ annotation('textbox', [0.5, 0.02, 0, 0], 'String', ...
     'EdgeColor', [0.8, 0.8, 0.8], 'LineWidth', 1, 'FontSize', 10);
 
 % Save the enhanced stress field plot
-saveas(gcf, 'plots/enhanced_stress_field.png');
+saveas(gcf, fullfile(save_dir, 'enhanced_stress_field.png'));
 
 %% CONVERGENCE STUDY PLOT
 figure('Position', [100, 100, 800, 500]);
@@ -170,7 +179,7 @@ title('Convergence Study: Error vs. Mesh Density', 'FontSize', 14);
 legend('Error', 'Theoretical 1st Order Convergence', 'Location', 'best', 'FontSize', 11);
 
 % Save the convergence study plot
-saveas(gcf, 'plots/enhanced_convergence_study.png');
+saveas(gcf, fullfile(save_dir, 'enhanced_convergence_study.png'));
 
 %% AREA DISTRIBUTION PLOT
 figure('Position', [100, 100, 800, 400]);
@@ -210,7 +219,7 @@ ylabel('Cross-sectional Area (mm²)', 'FontSize', 12);
 title('Cross-sectional Area Distribution', 'FontSize', 14);
 
 % Save the area distribution plot
-saveas(gcf, 'plots/enhanced_area_distribution.png');
+saveas(gcf, fullfile(save_dir, 'enhanced_area_distribution.png'));
 
 %% COMBINED VISUALIZATION WITH BAR SCHEMATIC
 figure('Position', [100, 100, 1000, 800]);
@@ -301,6 +310,6 @@ title('Stress and Displacement Distribution', 'FontSize', 14);
 legend('Location', 'best', 'FontSize', 10);
 
 % Save the combined visualization
-saveas(gcf, 'plots/enhanced_combined_visualization.png');
+saveas(gcf, fullfile(save_dir, 'enhanced_combined_visualization.png'));
 
-fprintf('Enhanced plots created and saved to %s directory\n', fullfile(pwd, 'plots'));
+fprintf('Enhanced plots created and saved to %s directory\n', fullfile(pwd, save_dir));

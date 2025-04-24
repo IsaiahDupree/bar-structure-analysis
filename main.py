@@ -89,8 +89,10 @@ def main():
         
         # Plot results even if the error is still high
         try:
-            bar.plot_results(x_analytical, stress_analytical, displacement_analytical, 
-                            x_fem, nodal_displacements, element_stresses, error)
+            # Update bar with final number of elements
+            bar.update_num_elements(num_elements_per_segment)
+            # Call plot_results with no arguments as it uses the internal state
+            bar.plot_results()
             print("Plots generated successfully.")
         except Exception as e:
             print(f"Error generating plots: {str(e)}")
