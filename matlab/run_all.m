@@ -1,18 +1,13 @@
 %% Bar Structure Analysis - Complete MATLAB Solution
 % This script runs the complete bar structure analysis with enhanced plotting
-% All required functions are included in this file
+% All required functions are included in this file - Standalone Version
 
 clc;
 clear all;
 close all;
 
-% Add parent directory to path to find all required functions
-parent_dir = fullfile(pwd, '..');
-addpath(parent_dir);
-disp(['Added parent directory to path: ' parent_dir]);
-
-disp('Bar Structure Analysis - Complete MATLAB Solution');
-disp('===============================================');
+disp('Bar Structure Analysis - Standalone MATLAB Solution');
+disp('================================================');
 
 %% Define parameters for the analysis
 % Problem parameters
@@ -38,7 +33,7 @@ disp('');
 disp('Generating enhanced plots...');
 
 % Create plots directory if it doesn't exist
-plots_dir = '../plots';
+plots_dir = 'plots';
 if ~exist(plots_dir, 'dir')
     mkdir(plots_dir);
 end
@@ -46,7 +41,7 @@ end
 % Run the enhanced plotting function with parameters
 enhanced_plotting_matlab(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment, plots_dir);
 
-disp(['Plots saved to ' fullfile(pwd, '../plots')]);
+disp(['Plots saved to ' fullfile(pwd, 'plots')]);
 disp('');
 
 disp('All tasks completed successfully.');
