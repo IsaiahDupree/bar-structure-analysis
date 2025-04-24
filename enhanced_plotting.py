@@ -30,7 +30,7 @@ def create_enhanced_plots(bar_analysis, save_dir='plots'):
     
     # Run analytical and FEM solutions if not already done
     bar_analysis.solve_analytical()
-    bar_analysis.solve_fem()
+    bar_analysis.solve_fem(bar_analysis.num_elements_per_segment)
     
     # Get analytical solution data
     x_analytical = np.linspace(0, 3*L, 1000)

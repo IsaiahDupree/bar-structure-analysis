@@ -45,24 +45,78 @@ class BarAnalysis:
         self.num_elements_per_segment = num_elements_per_segment
         
     def get_area_at_x(self, x):
-        """
-        Get the cross-sectional area at position x
+        """Get cross-sectional area at position x
         
-        For segment 1, the area varies linearly from A1 to A2
-        For segment 2, the area is constant A2
-        For segment 3, the area is constant A3
+        Args:
+            x: Position along bar (scalar or array)
+            
+        Returns:
+            Cross-sectional area at position x
         """
-        if x < 0 or x > self.total_length:
-            raise ValueError(f"x must be between 0 and {self.total_length}")
+        # Convert to numpy array if not already
+        x = np.atleast_1d(x)
+        
+        # Initialize area array
+        area = np.zeros_like(x, dtype=float)
+        
+        # For each position x
+        for i, xi in enumerate(x):
+            if xi <= self.L:
+                # First segment: linearly varying area from A1 to A2
+                area[i] = self.A1 - (self.A1 - self.A2) * (xi / self.L)
+            elif xi <= 2 * self.L:
+                # Second segment: constant area A2
+                area[i] = self.A2
+            else:
+                # Third segment: constant area A3
+                area[i] = self.A3
+        
+        # Return scalar if input was scalar
+        if len(area) == 1:
+            return area[0]
+        return area
+        
+    def get_stress_at_x(self, x):
+        """Get analytical stress at position x
+        
+        Args:
+            x: Position along bar (scalar or array)
             
-        if x <= self.L:  # First segment
-            # Linear interpolation from A1 to A2
-            return self.A1 + (self.A2 - self.A1) * (x / self.L)
-        elif x <= 2 * self.L:  # Second segment
-            return self.A2
-        else:  # Third segment
-            return self.A3
+        Returns:
+            Analytical stress at position x
+        """
+        # Convert to numpy array if not already
+        x = np.atleast_1d(x)
+        
+        # Initialize stress array
+        stress = np.zeros_like(x, dtype=float)
+        
+        # Get cross-sectional area at each position
+        area = self.get_area_at_x(x)
+        
+        # For each position x
+        for i, xi in enumerate(x):
+            if xi <= self.L:
+                # First segment: Force = F1 + F2 + F3
+                internal_force = self.F1 + self.F2 + self.F3
+            elif xi <= 2 * self.L:
+                # Second segment: Force = F2 + F3
+                internal_force = self.F2 + self.F3
+            else:
+                # Third segment: Force = F3
+                internal_force = self.F3
             
+            # Stress = Force / Area
+            if isinstance(area, np.ndarray):
+                stress[i] = internal_force / area[i]
+            else:
+                stress[i] = internal_force / area
+        
+        # Return scalar if input was scalar
+        if len(stress) == 1:
+            return stress[0]
+        return stress
+
     def get_modulus_at_x(self, x):
         """
         Get the elastic modulus at position x
@@ -316,18 +370,14 @@ class BarAnalysis:
                 # Use absolute error if stress is very small
                 error[i] = element_stresses[i] - stress_analytical_at_centers[i]
                 
-        # Create plots directory if it doesn't exist
-        os.makedirs(plots_dir, exist_ok=True)
-        print(f"Using alternative directory: {plots_dir}")
-        
         # Element center coordinates for plotting
-        x_element_centers = (x_fem[:-1] + x_fem[1:]) / 2
+        x_element_centers = (x_nodal[:-1] + x_nodal[1:]) / 2
         # Calculate element lengths
-        element_lengths = x_fem[1:] - x_fem[:-1]
+        element_lengths = x_nodal[1:] - x_nodal[:-1]
         # Convert error to percentage
         percent_error = np.abs(error) * 100
         
-        return x_fem, nodal_displacements, element_stresses, error
+        return x_nodal, nodal_displacements, element_stresses, error
         
     def plot_results(self, plots_dir="plots"):
         """Generate plots for the results
@@ -342,7 +392,7 @@ class BarAnalysis:
         x_analytical, displacement_analytical, stress_analytical = self.solve_analytical()
         
         # Run FEM solution
-        x_fem, nodal_displacements, element_stresses, error = self.solve_fem()
+        x_fem, nodal_displacements, element_stresses, error = self.solve_fem(self.num_elements_per_segment)
         
         # Element center coordinates for plotting
         x_element_centers = (x_fem[:-1] + x_fem[1:]) / 2
@@ -362,23 +412,10 @@ class BarAnalysis:
             os.path.join(plots_dir, f"displacement_field_{self.num_elements_per_segment}.png")
         )
         
-    # Figure 2: Stress Field
-    plt.figure(figsize=(10, 6))
-    plt.plot(x_analytical, stress_analytical, 'b-', label='Analytical')
-    plt.plot(x_element_centers, element_stresses, 'ro-', label='FEM')
-    
-    # Add segment boundaries markers
-    for i, x_pos in enumerate([self.L, 2*self.L]):
-        plt.axvline(x_pos, color='gray', linestyle='--', alpha=0.7)
-        plt.text(x_pos+5, max(stress_analytical)*0.2, f'Segment {i+1}/{i+2} boundary', 
-                rotation=90, verticalalignment='center')
-    
-    # Add segment annotations
-        
-        # Figure 1: Displacement Field
+        # Figure 2: Stress Field
         plt.figure(figsize=(10, 6))
-        plt.plot(x_analytical, displacement_analytical, 'b-', label='Analytical')
-        plt.plot(x_fem, nodal_displacements, 'ro-', label='FEM')
+        plt.plot(x_analytical, stress_analytical, 'b-', label='Analytical')
+        plt.plot(x_element_centers, element_stresses, 'ro-', label='FEM')
         plt.legend()
         plot_with_labels(
             plt, 

@@ -14,6 +14,7 @@ This directory contains auxiliary and development files for the Bar Structure An
 The files in this directory are not intended for direct use. They are maintained for reference, historical purposes, and potential future development.
 
 For the main implementation:
+
 - Use the files in the `/python/` directory for the Python implementation
 - Use the files in the `/matlab/` directory for the MATLAB implementation
 

@@ -29,10 +29,13 @@ def create_enhanced_plots(bar_analysis, save_dir='plots'):
     F1, F2, F3 = bar_analysis.F1, bar_analysis.F2, bar_analysis.F3
     
     # Run analytical and FEM solutions if not already done
-    bar_analysis.solve_analytical()
-    bar_analysis.solve_fem()
+    x_analytical, displacement_analytical, stress_analytical = bar_analysis.solve_analytical()
+    x_fem, nodal_displacements, element_stresses, error = bar_analysis.solve_fem(bar_analysis.num_elements_per_segment)
     
-    # Get analytical solution data
+    # Store FEM results for later use
+    bar_analysis.fem_results = (x_fem, nodal_displacements, element_stresses, error)
+    
+    # Get analytical solution data in more detail
     x_analytical = np.linspace(0, 3*L, 1000)
     stress_analytical = np.zeros_like(x_analytical)
     displacement_analytical = np.zeros_like(x_analytical)
@@ -86,7 +89,7 @@ def create_enhanced_plots(bar_analysis, save_dir='plots'):
         )
         
         # Solve FEM
-        _, _, temp_elem_stresses, temp_error = temp_bar.solve_fem()
+        _, _, temp_elem_stresses, temp_error = temp_bar.solve_fem(mesh_size)
         
         # Calculate max error percentage
         max_error_pct = np.max(np.abs(temp_error)) * 100
