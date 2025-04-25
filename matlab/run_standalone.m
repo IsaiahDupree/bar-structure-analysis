@@ -159,16 +159,20 @@ function [x_nodal, nodal_displacements, element_stresses, error] = solve_fem(A1,
         K(node1:node2, node1:node2) = K(node1:node2, node1:node2) + ke;
     end
     
-    F(1) = F(1) + F1 * 1000; 
+    % Apply forces at specific nodes
     node_at_L = num_elements_per_segment + 1;
     F(node_at_L) = F(node_at_L) + F2 * 1000;
     
     node_at_2L = 2 * num_elements_per_segment + 1;
     F(node_at_2L) = F(node_at_2L) + F3 * 1000;
     
+    % Apply boundary conditions (fixed at x=0)
     K(1, :) = 0;
     K(1, 1) = 1;
     F(1) = 0;
+    
+    % Apply F1 at the right end of the bar
+    F(end) = F1 * 1000;
     
     nodal_displacements = K \ F;
     
@@ -251,8 +255,7 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     title('Displacement Field Comparison: Analytical vs. FEM', 'FontSize', 14);
     legend('Location', 'northwest');
     grid on;
-    
-        saveas(gcf, 'displacement_field.png');
+    saveas(gcf, 'displacement_field.png');
 
     figure('Position', [100, 100, 900, 600]);
     plot(x_analytical, stress_analytical, 'b-', 'LineWidth', 2.5, 'DisplayName', 'Analytical Solution');
@@ -302,8 +305,7 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     title('Stress Field Comparison: Analytical vs. FEM', 'FontSize', 14);
     legend('Location', 'northeast');
     grid on;
-    
-        saveas(gcf, 'stress_field.png');
+    saveas(gcf, 'stress_field.png');
 
     % Perform convergence study with different mesh sizes
     element_counts = [4, 8, 16, 32];
@@ -333,6 +335,5 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     ylabel('Average Error (%)', 'FontSize', 12);
     title('FEM Convergence Study: Error vs. Number of Elements', 'FontSize', 14);
     grid on;
-    
-        saveas(gcf, 'convergence_study.png');
+    saveas(gcf, 'convergence_study.png');
 end
