@@ -121,140 +121,90 @@ function [x_analytical, stress_analytical, displacement_analytical] = solve_anal
     end
 end
 
-% FUNCTION 2: FEM solution
 function [x_nodal, nodal_displacements, element_stresses, error] = solve_fem(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment)
-    % FEM solution for the composite bar problem
-    % This function implements the Finite Element Method for a bar with varying cross-section
-    
-    % Total number of elements
-    num_elements = 3 * num_elements_per_segment;
-    
-    % Total number of nodes
+    num_elements = num_elements_per_segment * 3;
     num_nodes = num_elements + 1;
-    
-    % Element length
-    element_length = L / num_elements_per_segment;
-    
-    % Initialize node coordinates
     x_nodal = zeros(num_nodes, 1);
+    element_length = 3*L / num_elements;
+    
     for i = 1:num_nodes
         x_nodal(i) = (i-1) * element_length;
     end
     
-    % Initialize global stiffness matrix and force vector
     K = zeros(num_nodes, num_nodes);
     F = zeros(num_nodes, 1);
     
-    % Assemble the global stiffness matrix and force vector
     for e = 1:num_elements
-        % Get element nodes
         node1 = e;
         node2 = e + 1;
         
-        % Get coordinates of the element nodes
         x1 = x_nodal(node1);
         x2 = x_nodal(node2);
         
-        % Element length
         le = x2 - x1;
         
-        % Get element properties based on its position
-        if x1 < L
-            % Segment 1
+        x_mid = (x1 + x2) / 2;
+        if x_mid <= L
             A = A1;
             E = E1;
-        elseif x1 < 2*L
-            % Segment 2
+        elseif x_mid <= 2*L
             A = A2;
             E = E2;
         else
-            % Segment 3
             A = A3;
             E = E2;
         end
         
-        % Calculate element stiffness matrix
-        k_e = (A * E * 1000) / le * [1, -1; -1, 1]; % Convert GPa to MPa
-        
-        % Assemble into global stiffness matrix
-        K(node1, node1) = K(node1, node1) + k_e(1, 1);
-        K(node1, node2) = K(node1, node2) + k_e(1, 2);
-        K(node2, node1) = K(node2, node1) + k_e(2, 1);
-        K(node2, node2) = K(node2, node2) + k_e(2, 2);
+        ke = (A * E * 1000 / le) * [1, -1; -1, 1];
+        K(node1:node2, node1:node2) = K(node1:node2, node1:node2) + ke;
     end
     
-    % Apply concentrated forces at appropriate nodes
-    % F1 at the beginning of the bar
-    F(1) = F(1) + F1 * 1000; % Convert kN to N
-    
-    % F2 at the boundary between segment 1 and 2
+    F(1) = F(1) + F1 * 1000; 
     node_at_L = num_elements_per_segment + 1;
-    F(node_at_L) = F(node_at_L) + F2 * 1000; % Convert kN to N
+    F(node_at_L) = F(node_at_L) + F2 * 1000;
     
-    % F3 at the boundary between segment 2 and 3
     node_at_2L = 2 * num_elements_per_segment + 1;
-    F(node_at_2L) = F(node_at_2L) + F3 * 1000; % Convert kN to N
+    F(node_at_2L) = F(node_at_2L) + F3 * 1000;
     
-    % Apply boundary conditions (fixed at x=0)
-    % The first node (node 1) is fixed, so we modify K and F
     K(1, :) = 0;
     K(1, 1) = 1;
     F(1) = 0;
     
-    % Solve the system Ku = F
     nodal_displacements = K \ F;
     
-    % Calculate element stresses
     element_stresses = zeros(num_elements, 1);
     for e = 1:num_elements
-        % Get element nodes
         node1 = e;
         node2 = e + 1;
         
-        % Get nodal displacements
         u1 = nodal_displacements(node1);
         u2 = nodal_displacements(node2);
         
-        % Element length
         le = x_nodal(node2) - x_nodal(node1);
         
-        % Get element properties based on its position
-        if x_nodal(node1) < L
-            % Segment 1
+        x_mid = (x_nodal(node1) + x_nodal(node2)) / 2;
+        if x_mid <= L
             A = A1;
             E = E1;
-        elseif x_nodal(node1) < 2*L
-            % Segment 2
+        elseif x_mid <= 2*L
             A = A2;
             E = E2;
         else
-            % Segment 3
             A = A3;
             E = E2;
         end
         
-        % Calculate element stress
-        element_stresses(e) = E * 1000 * (u2 - u1) / le; % MPa
+        element_stresses(e) = E * 1000 * (u2 - u1) / le;
     end
     
-    % Calculate error relative to analytical solution
-    % Get analytical solution at element centers
     element_centers = (x_nodal(1:end-1) + x_nodal(2:end)) / 2;
-    
-    % Get analytical solution (500 points along the bar)
     [x_an, stress_an, ~] = solve_analytical(A1, A2, A3, E1, E2, L, F1, F2, F3, 500);
-    
-    % Interpolate analytical solution at element centers
     stress_analytical_at_centers = interp1(x_an, stress_an, element_centers);
-    
-    % Calculate relative error
     rel_error = abs((element_stresses - stress_analytical_at_centers) ./ stress_analytical_at_centers);
-    error = mean(rel_error) * 100; % Error in percentage
+    error = mean(rel_error) * 100; 
 end
 
-% FUNCTION 3: Area calculation
 function area = get_area_at_x(x, A1, A2, A3, L)
-    % Returns the cross-sectional area at position x
     if x <= L
         area = A1;
     elseif x <= 2*L
@@ -264,27 +214,12 @@ function area = get_area_at_x(x, A1, A2, A3, L)
     end
 end
 
-% FUNCTION 4: Enhanced plotting for standalone version
 function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_nodal, nodal_displacements, element_stresses)
-    % This function generates enhanced plots for bar structure analysis
-    % It creates displacement and stress plots with annotations
-    
-    % Calculate element centers for stress plotting
-    num_elements = length(element_stresses);
-    element_centers = zeros(num_elements, 1);
-    for e = 1:num_elements
-        node1 = e;
-        node2 = e + 1;
-        element_centers(e) = (x_nodal(node1) + x_nodal(node2)) / 2;
-    end
-    
-    % PLOT 1: DISPLACEMENT FIELD
     figure('Position', [100, 100, 900, 600]);
     plot(x_analytical, displacement_analytical, 'b-', 'LineWidth', 2.5, 'DisplayName', 'Analytical Solution');
     hold on;
     plot(x_nodal, nodal_displacements, 'ro', 'MarkerSize', 6, 'LineWidth', 1.5, 'DisplayName', 'FEM Solution (Nodes)');
     
-    % Add segment boundaries
     for i = 1:2
         x_pos = i * L;
         line([x_pos, x_pos], ylim, 'Color', [0.5, 0.5, 0.5], 'LineStyle', '--', 'LineWidth', 1);
