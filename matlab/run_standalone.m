@@ -25,7 +25,11 @@ disp('Generating enhanced plots...');
 [x_analytical, stress_analytical, displacement_analytical] = solve_analytical(A1, A2, A3, E1, E2, L, F1, F2, F3);
 [x_fem, nodal_displacements, element_stresses, error] = solve_fem(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment);
 
-standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_fem, nodal_displacements, element_stresses);
+try
+    standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_fem, nodal_displacements, element_stresses);
+catch e
+    warning('Error in plotting function: %s', e.message);
+end
 
 disp('Plots generated and saved in the current directory.');
 disp('');
@@ -129,10 +133,11 @@ function [x_analytical, stress_analytical, displacement_analytical] = solve_anal
 end
 
 function [x_nodal, nodal_displacements, element_stresses, error] = solve_fem(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment)
+    % Calculate the total number of elements and nodes
     num_elements = num_elements_per_segment * 3;
     num_nodes = num_elements + 1;
     x_nodal = zeros(num_nodes, 1);
-    element_length = 3*L / num_elements;
+    element_length = L / num_elements_per_segment;
     
     for i = 1:num_nodes
         x_nodal(i) = (i-1) * element_length;
@@ -167,11 +172,11 @@ function [x_nodal, nodal_displacements, element_stresses, error] = solve_fem(A1,
     end
     
     % Apply forces at specific nodes
-    node_at_L = num_elements_per_segment + 1;
-    F(node_at_L) = F(node_at_L) + F2 * 1000;
+    node_at_L = num_elements_per_segment + 1;  % Node at boundary between segments 1 and 2
+    F(node_at_L) = F(node_at_L) + F2 * 1000;  % Convert kN to N
     
-    node_at_2L = 2 * num_elements_per_segment + 1;
-    F(node_at_2L) = F(node_at_2L) + F3 * 1000;
+    node_at_2L = 2 * num_elements_per_segment + 1;  % Node at boundary between segments 2 and 3
+    F(node_at_2L) = F(node_at_2L) + F3 * 1000;  % Convert kN to N
     
     % Apply boundary conditions (fixed at x=0)
     K(1, :) = 0;
@@ -179,10 +184,18 @@ function [x_nodal, nodal_displacements, element_stresses, error] = solve_fem(A1,
     F(1) = 0;
     
     % Apply F1 at the right end of the bar
-    F(end) = F1 * 1000;
+    F(end) = F1 * 1000;  % Convert kN to N
     
-    nodal_displacements = K \ F;
+    % Solve the system of equations
+    try
+        nodal_displacements = K \ F;
+    catch e
+        warning('Error solving the system of equations: %s', e.message);
+        % Return zero displacements if solver fails
+        nodal_displacements = zeros(num_nodes, 1);
+    end
     
+    % Initialize element stresses
     element_stresses = zeros(num_elements, 1);
     for e = 1:num_elements
         node1 = e;
@@ -208,11 +221,21 @@ function [x_nodal, nodal_displacements, element_stresses, error] = solve_fem(A1,
         element_stresses(e) = E * 1000 * (u2 - u1) / le;
     end
     
+    % Calculate element centers for error analysis
     element_centers = (x_nodal(1:end-1) + x_nodal(2:end)) / 2;
-    [x_an, stress_an, ~] = solve_analytical(A1, A2, A3, E1, E2, L, F1, F2, F3, 500);
-    stress_analytical_at_centers = interp1(x_an, stress_an, element_centers);
-    rel_error = abs((element_stresses - stress_analytical_at_centers) ./ stress_analytical_at_centers);
-    error = mean(rel_error) * 100; 
+    
+    % Get analytical solution at element centers
+    try
+        [x_an, stress_an, ~] = solve_analytical(A1, A2, A3, E1, E2, L, F1, F2, F3, 500);
+        % Interpolate analytical solution at element centers
+        stress_analytical_at_centers = interp1(x_an, stress_an, element_centers);
+        % Calculate relative error
+        rel_error = abs((element_stresses - stress_analytical_at_centers) ./ stress_analytical_at_centers);
+        error = mean(rel_error) * 100; % Error in percentage
+    catch e
+        warning('Error calculating analytical comparison: %s', e.message);
+        error = NaN;
+    end 
 end
 
 function area = get_area_at_x(x, A1, A2, A3, L)
