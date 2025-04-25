@@ -1,24 +1,18 @@
-%% Bar Structure Analysis - Standalone Solution
-% This script runs a comprehensive bar structure analysis with enhanced plotting
-% All functions are included in this one file for simplicity.
-
 clc;
 clear all;
 close all;
 
-%% Problem Parameters
-A1 = 200;  % mm² - Cross-sectional area 1
-A2 = 100;  % mm² - Cross-sectional area 2
-A3 = 50;   % mm² - Cross-sectional area 3
-E1 = 130;  % GPa - Elastic modulus 1
-E2 = 200;  % GPa - Elastic modulus 2
-L = 500;   % mm - Segment length
-F1 = 20;   % kN - Force 1
-F2 = 40;   % kN - Force 2
-F3 = 20;   % kN - Force 3
-num_elements_per_segment = 8; % Number of elements per segment for FEM
+A1 = 200;
+A2 = 100;
+A3 = 50;
+E1 = 130;
+E2 = 200;
+L = 500;
+F1 = 20;
+F2 = 40;
+F3 = 20;
+num_elements_per_segment = 8;
 
-% Display parameters
 disp('Problem parameters:');
 disp(['- A1 = ' num2str(A1) ' mm², A2 = ' num2str(A2) ' mm², A3 = ' num2str(A3) ' mm²']);
 disp(['- E1 = ' num2str(E1) ' GPa, E2 = ' num2str(E2) ' GPa']);
@@ -26,37 +20,24 @@ disp(['- L = ' num2str(L) ' mm']);
 disp(['- F1 = ' num2str(F1) ' kN, F2 = ' num2str(F2) ' kN, F3 = ' num2str(F3) ' kN']);
 disp('');
 
-%% Analysis Setup
-% Set up for analysis without directory operations
-
-%% Step 1: Generate Enhanced Plots
 disp('Generating enhanced plots...');
 
-% Get analytical solution
 [x_analytical, stress_analytical, displacement_analytical] = solve_analytical(A1, A2, A3, E1, E2, L, F1, F2, F3);
-
-% Get FEM solution
 [x_fem, nodal_displacements, element_stresses, error] = solve_fem(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment);
 
-% Generate enhanced plots
 standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_fem, nodal_displacements, element_stresses);
 
 disp('Plots generated and saved in the current directory.');
 disp('');
 
-%% Step 2: Generate Comprehensive Report
 disp('Generating comprehensive report...');
-matlab_dir = fullfile(pwd);
 
-% Generate report file
-report_file = fullfile(matlab_dir, 'enhanced_bar_analysis_report.txt');
+report_file = 'enhanced_bar_analysis_report.txt';
 fid = fopen(report_file, 'w');
 
-% Write report contents
 fprintf(fid, 'COMPOSITE BAR STRUCTURE ANALYSIS REPORT\n');
 fprintf(fid, '=======================================\n\n');
 
-% Write problem parameters
 fprintf(fid, '1. PROBLEM PARAMETERS\n');
 fprintf(fid, '------------------\n');
 fprintf(fid, '- Cross-sectional areas: A1 = %g mm², A2 = %g mm², A3 = %g mm²\n', A1, A2, A3);
@@ -64,29 +45,23 @@ fprintf(fid, '- Elastic moduli: E1 = %g GPa, E2 = %g GPa\n', E1, E2);
 fprintf(fid, '- Segment length: L = %g mm\n', L);
 fprintf(fid, '- Applied forces: F1 = %g kN, F2 = %g kN, F3 = %g kN\n\n', F1, F2, F3);
 
-% Write methodology
 fprintf(fid, '2. METHODOLOGY\n');
 fprintf(fid, '-------------\n');
 fprintf(fid, 'The bar structure was analyzed using both analytical and FEM approaches.\n');
 fprintf(fid, '- Analytical: Direct application of mechanics of materials principles\n');
 fprintf(fid, '- FEM: %d elements per segment (%d total elements)\n\n', num_elements_per_segment, 3*num_elements_per_segment);
 
-% Write key results
 fprintf(fid, '3. KEY RESULTS\n');
 fprintf(fid, '------------\n');
 
-% Maximum displacement
 max_disp = max(displacement_analytical);
 fprintf(fid, '- Maximum displacement: %.4f mm\n', max_disp);
 
-% Maximum stress
 max_stress = max(stress_analytical);
 fprintf(fid, '- Maximum stress: %.2f MPa\n', max_stress);
 
-% Error analysis
 fprintf(fid, '- FEM accuracy: Average error of %.2f%% compared to analytical solution\n\n', error);
 
-% Write conclusions
 fprintf(fid, '4. CONCLUSIONS\n');
 fprintf(fid, '-------------\n');
 fprintf(fid, '- The composite bar structure behaves as expected under the applied loads.\n');
@@ -94,7 +69,6 @@ fprintf(fid, '- The FEM solution closely matches the analytical solution, valida
 fprintf(fid, '- The highest stresses occur in segment 3 due to its smaller cross-sectional area.\n');
 fprintf(fid, '- The maximum displacement at the end of the bar is %.4f mm.\n\n', max_disp);
 
-% Write report generation information
 fprintf(fid, 'Report generated on %s\n', datestr(now));
 fprintf(fid, 'See the generated plots for visual representations of the results.\n');
 
@@ -109,32 +83,20 @@ disp('');
 disp('All tasks completed successfully.');
 disp('For more details, check the generated plots and report.');
 
-% =========================================================================
-% FUNCTION DEFINITIONS BELOW - DO NOT MODIFY ABOVE THIS LINE
-% =========================================================================
-
-% FUNCTION 1: Analytical solution
 function [x_analytical, stress_analytical, displacement_analytical] = solve_analytical(A1, A2, A3, E1, E2, L, F1, F2, F3, num_points)
-    % Analytical solution for a composite bar with varying cross-section
-    % Default number of points if not provided
-    if nargin < 10
+    if nargin < 10 || isempty(num_points)
         num_points = 500;
     end
     
-    % Create x vector for the entire bar
-    total_length = 3 * L;
-    x_analytical = linspace(0, total_length, num_points);
+    x_analytical = linspace(0, 3*L, num_points);
     
-    % Initialize displacement and stress vectors
     displacement_analytical = zeros(size(x_analytical));
     stress_analytical = zeros(size(x_analytical));
-    
-    % Calculate displacements and stresses for each segment
+
     for i = 1:num_points
         x = x_analytical(i);
         
-        % Determine which segment the point is in
-        if x <= L % Segment 1
+        if x <= L 
             area = A1;
             E = E1;
             % Formula for segment 1
@@ -352,10 +314,8 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     legend('Location', 'northwest');
     grid on;
     
-    % Save the displacement plot
-    saveas(gcf, fullfile(pwd, 'displacement_field.png'));
-    
-    % PLOT 2: STRESS FIELD
+        saveas(gcf, 'displacement_field.png');
+
     figure('Position', [100, 100, 900, 600]);
     plot(x_analytical, stress_analytical, 'b-', 'LineWidth', 2.5, 'DisplayName', 'Analytical Solution');
     hold on;
@@ -405,10 +365,8 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     legend('Location', 'northeast');
     grid on;
     
-    % Save the stress plot
-    saveas(gcf, fullfile(pwd, 'stress_field.png'));
-    
-    % PLOT 3: CONVERGENCE STUDY (optional)
+        saveas(gcf, 'stress_field.png');
+
     % Perform convergence study with different mesh sizes
     element_counts = [4, 8, 16, 32];
     errors = zeros(size(element_counts));
@@ -438,6 +396,5 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     title('FEM Convergence Study: Error vs. Number of Elements', 'FontSize', 14);
     grid on;
     
-    % Save the convergence plot
-    saveas(gcf, fullfile(pwd, 'convergence_study.png'));
+        saveas(gcf, 'convergence_study.png');
 end
