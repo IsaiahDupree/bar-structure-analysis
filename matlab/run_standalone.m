@@ -33,9 +33,14 @@ disp('');
 disp('Generating comprehensive report...');
 
 report_file = 'enhanced_bar_analysis_report.txt';
-fid = fopen(report_file, 'w');
-
-fprintf(fid, 'COMPOSITE BAR STRUCTURE ANALYSIS REPORT\n');
+try
+    fid = fopen(report_file, 'w');
+    if fid == -1
+        warning('Could not open file for writing: %s', report_file);
+        return;
+    end
+    
+    fprintf(fid, 'COMPOSITE BAR STRUCTURE ANALYSIS REPORT\n');
 fprintf(fid, '=======================================\n\n');
 
 fprintf(fid, '1. PROBLEM PARAMETERS\n');
@@ -72,9 +77,11 @@ fprintf(fid, '- The maximum displacement at the end of the bar is %.4f mm.\n\n',
 fprintf(fid, 'Report generated on %s\n', datestr(now));
 fprintf(fid, 'See the generated plots for visual representations of the results.\n');
 
-fclose(fid);
-
-disp(['Report generated: ' report_file]);
+    fclose(fid);
+    disp(['Report generated: ' report_file]);
+catch e
+    warning('Error writing report: %s', e.message);
+end
 disp('');
 
 disp('Analysis and plotting completed successfully.');
@@ -255,7 +262,11 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     title('Displacement Field Comparison: Analytical vs. FEM', 'FontSize', 14);
     legend('Location', 'northwest');
     grid on;
-    saveas(gcf, 'displacement_field.png');
+    try
+        saveas(gcf, 'displacement_field.png');
+    catch e
+        warning('Could not save displacement field plot: %s', e.message);
+    end
 
     figure('Position', [100, 100, 900, 600]);
     plot(x_analytical, stress_analytical, 'b-', 'LineWidth', 2.5, 'DisplayName', 'Analytical Solution');
@@ -305,7 +316,11 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     title('Stress Field Comparison: Analytical vs. FEM', 'FontSize', 14);
     legend('Location', 'northeast');
     grid on;
-    saveas(gcf, 'stress_field.png');
+    try
+        saveas(gcf, 'stress_field.png');
+    catch e
+        warning('Could not save stress field plot: %s', e.message);
+    end
 
     % Perform convergence study with different mesh sizes
     element_counts = [4, 8, 16, 32];
@@ -335,5 +350,9 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     ylabel('Average Error (%)', 'FontSize', 12);
     title('FEM Convergence Study: Error vs. Number of Elements', 'FontSize', 14);
     grid on;
-    saveas(gcf, 'convergence_study.png');
+    try
+        saveas(gcf, 'convergence_study.png');
+    catch e
+        warning('Could not save convergence study plot: %s', e.message);
+    end
 end
