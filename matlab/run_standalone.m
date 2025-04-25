@@ -1,9 +1,6 @@
-%% Bar Structure Analysis - Complete STANDALONE Solution
+%% Bar Structure Analysis - Standalone Solution
 % This script runs a comprehensive bar structure analysis with enhanced plotting
-% and detailed report generation.
-%
-% This is the STANDALONE version with all functions included in one file.
-% For modular development, use run_all.m instead.
+% All functions are included in this one file for simplicity.
 
 clc;
 clear all;
@@ -29,13 +26,8 @@ disp(['- L = ' num2str(L) ' mm']);
 disp(['- F1 = ' num2str(F1) ' kN, F2 = ' num2str(F2) ' kN, F3 = ' num2str(F3) ' kN']);
 disp('');
 
-%% Prepare Output Directory
-% Create plots directory if it doesn't exist
-plots_dir = fullfile(pwd, '..', 'plots');
-if ~exist(plots_dir, 'dir')
-    mkdir(plots_dir);
-end
-fprintf('Using plots directory: %s\n', plots_dir);
+%% Analysis Setup
+% Set up for analysis without directory operations
 
 %% Step 1: Generate Enhanced Plots
 disp('Generating enhanced plots...');
@@ -47,9 +39,9 @@ disp('Generating enhanced plots...');
 [x_fem, nodal_displacements, element_stresses, error] = solve_fem(A1, A2, A3, E1, E2, L, F1, F2, F3, num_elements_per_segment);
 
 % Generate enhanced plots
-standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_fem, nodal_displacements, element_stresses, plots_dir);
+standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_fem, nodal_displacements, element_stresses);
 
-disp(['Plots generated and saved to ' plots_dir]);
+disp('Plots generated and saved in the current directory.');
 disp('');
 
 %% Step 2: Generate Comprehensive Report
@@ -104,11 +96,14 @@ fprintf(fid, '- The maximum displacement at the end of the bar is %.4f mm.\n\n',
 
 % Write report generation information
 fprintf(fid, 'Report generated on %s\n', datestr(now));
-fprintf(fid, 'See the plots directory for visual representations of the results.\n');
+fprintf(fid, 'See the generated plots for visual representations of the results.\n');
 
 fclose(fid);
 
 disp(['Report generated: ' report_file]);
+disp('');
+
+disp('Analysis and plotting completed successfully.');
 disp('');
 
 disp('All tasks completed successfully.');
@@ -308,7 +303,7 @@ function area = get_area_at_x(x, A1, A2, A3, L)
 end
 
 % FUNCTION 4: Enhanced plotting for standalone version
-function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_nodal, nodal_displacements, element_stresses, plots_dir)
+function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_nodal, nodal_displacements, element_stresses)
     % This function generates enhanced plots for bar structure analysis
     % It creates displacement and stress plots with annotations
     
@@ -358,7 +353,7 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     grid on;
     
     % Save the displacement plot
-    saveas(gcf, fullfile(plots_dir, 'displacement_field.png'));
+    saveas(gcf, fullfile(pwd, 'displacement_field.png'));
     
     % PLOT 2: STRESS FIELD
     figure('Position', [100, 100, 900, 600]);
@@ -411,7 +406,7 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     grid on;
     
     % Save the stress plot
-    saveas(gcf, fullfile(plots_dir, 'stress_field.png'));
+    saveas(gcf, fullfile(pwd, 'stress_field.png'));
     
     % PLOT 3: CONVERGENCE STUDY (optional)
     % Perform convergence study with different mesh sizes
@@ -444,5 +439,5 @@ function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, di
     grid on;
     
     % Save the convergence plot
-    saveas(gcf, fullfile(plots_dir, 'convergence_study.png'));
+    saveas(gcf, fullfile(pwd, 'convergence_study.png'));
 end
