@@ -215,6 +215,9 @@ function area = get_area_at_x(x, A1, A2, A3, L)
 end
 
 function standalone_plotting(A1, A2, A3, E1, E2, L, F1, F2, F3, x_analytical, displacement_analytical, stress_analytical, x_nodal, nodal_displacements, element_stresses)
+    % Calculate element centers for plotting element stresses
+    element_centers = (x_nodal(1:end-1) + x_nodal(2:end)) / 2;
+    
     figure('Position', [100, 100, 900, 600]);
     plot(x_analytical, displacement_analytical, 'b-', 'LineWidth', 2.5, 'DisplayName', 'Analytical Solution');
     hold on;
