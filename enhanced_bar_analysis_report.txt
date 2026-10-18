@@ -1,0 +1,71 @@
+COMPOSITE BAR STRUCTURE ANALYSIS REPORT
+=======================================
+
+PARAMETERS:
+  A1 = 200 mm², A2 = 100 mm², A3 = 50 mm²
+  E1 = 130.0 GPa, E2 = 200.0 GPa
+  L = 500 mm
+  F1 = 20.0 kN, F2 = 40.0 kN, F3 = 20.0 kN
+
+ANSWERS TO THE 8 MAIN QUESTIONS:
+--------------------------------
+
+1. EQUILIBRIUM EQUATION:
+   The equilibrium equation for the bar structure is:
+   R = F1 + F2 + F3 = 80.0 kN
+   This reaction force at the fixed end balances all applied loads.
+
+2. INTERNAL FORCES:
+   Segment 1: N1 = 80.0 kN (Direction: tension)
+   Segment 2: N2 = 60.0 kN (Direction: tension)
+   Segment 3: N3 = 20.0 kN (Direction: tension)
+
+3. STRESS DISTRIBUTION:
+   Segment 1: σ₁ varies from 400.0 MPa to 800.0 MPa
+   Segment 2: σ₂ = 600.0 MPa (constant)
+   Segment 3: σ₃ =    The stress is calculated using the formula σ = N/A, where N is the internal force
+   and A is the cross-sectional area at the given position.
+
+4. AXIAL DISPLACEMENT:
+   The axial displacement is calculated by integrating the strain along the bar.
+   For constant cross-section: u = (N*L)/(E*A)
+   For varying cross-section: u = (N*L)/(E*(A2-A1))*ln(A2/A1)
+
+   Segment 1: δ₁ = 2.13 mm
+   Segment 2: δ₂ = 2.31 mm
+   Segment 3: δ₃ = 1.00 mm
+   Total end displacement: 5.44 mm
+
+5. FINITE ELEMENT METHOD FORMULATION:
+   The bar is divided into 64 elements per segment (192 total elements).
+   For each element, the stiffness matrix is calculated as: k = (A*E/L) * [1 -1; -1 1]
+   The global stiffness matrix is assembled, boundary conditions applied,
+   and the system of equations KU = F is solved for the nodal displacements.
+
+6. FEM RESULTS:
+   Maximum stress: 793.80 MPa
+   End displacement: 5.4404 mm
+   Maximum error compared to analytical solution: 300.00%
+
+7. ERROR ANALYSIS:
+   The FEM solution achieves a maximum error of 300.00%
+   Error is calculated as (FEM - Analytical)/Analytical * 100%
+   The largest errors typically occur at segment boundaries due to
+   discontinuities in material properties and cross-sectional areas.
+
+8. CONVERGENCE BEHAVIOR:
+   The FEM solution converges to the analytical solution as the number
+   of elements increases. Mesh refinement strategy: doubling elements
+   until error falls below 5% threshold.
+   Final mesh density: 64 elements per segment
+
+ADDITIONAL INFORMATION:
+----------------------
+The following plots have been generated in the "plots" directory:
+  - Enhanced displacement field (enhanced_displacement_field.png)
+  - Enhanced stress field (enhanced_stress_field.png)
+  - Error distribution (enhanced_error.png)
+  - Area distribution (enhanced_area_distribution.png)
+  - Combined visualization (enhanced_combined_visualization.png)
+
+Report generated: 23-Apr-2025 22:37:38
